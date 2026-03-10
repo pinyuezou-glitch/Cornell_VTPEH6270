@@ -1,0 +1,146 @@
+---
+title: "VTPEH 6270 - Check Point 01"
+subtitle: "Basic R Skills"
+author: "Fina Zou"
+date: "`r Sys.Date()`"
+editor_options:
+  chunk_output_type: console
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+urlcolor: blue
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Introduction
+
+The main question we want to address is: ***how has vaccination coverage changed through the years?***
+
+# Loading Data
+
+```{r, results='hide'}
+# Load file
+data_vaccination=read.csv("CDC_vaccination_pregnancy.csv")
+# Preview the data
+head(data_vaccination)
+```
+
+The data set is not labeled using best practices (e.g., uses unusual characters like "..."). We can clean the formatting using the `janitor` package.
+
+```{r, results='hide'}
+# install.packages("janitor")
+# library(janitor)
+library(janitor)
+data_vaccination=clean_names(data_vaccination)
+# Preview the cleaned data
+head(data_vaccination)
+
+```
+
+# Eploring the Data
+
+
+```{r, results='hide'}
+
+unique(data_vaccination$vaccine)
+
+```
+
+The considered vaccines are Influenza and Tdap, which correspond to influenza and tetanus/diphtheria/pertussis respectively.
+
+```{r, results='hide'}
+unique(data_vaccination$dimension_type)
+
+```
+
+The considered individual characteristics are Age and Race and Ethnicity.
+
+
+```{r, results='hide'}
+unique(data_vaccination$dimension[data_vaccination$dimension_type=="Race and Ethnicity"])
+
+```
+
+The represented races and ethnicities are White, Non-Hispanic; Black, Non-Hispanic; Hispanic; Other or Multiple Races, Non-Hispanic.
+
+
+```{r, results='hide'}
+min(data_vaccination$survey_year_influenza_season, na.rm = TRUE)
+max(data_vaccination$survey_year_influenza_season, na.rm = TRUE)
+
+```
+
+The study spans from 2012 to 2022.
+
+```{r, results='hide'}
+
+# Check class
+class(data_vaccination$estimate)
+
+# Check values to ensure class conversion will not erase any important data
+unique(data_vaccination$estimate)
+
+# Class conversion
+data_vaccination$estimate <- as.numeric(data_vaccination$estimate)
+
+# Check output
+class(data_vaccination$estimate)
+
+```
+
+Vaccination coverage should be recorded as numeric. In the original dataset it is stored as character
+
+# Focus Description of 18 years old and older of NY State
+
+*Subset the data to represent only 18+ years old of NY State*
+
+```{r, results='hide'}
+data_ny_18plus <- data_vaccination[
+  data_vaccination$geography=="New York" &
+    data_vaccination$dimension_type=="Age" &
+    data_vaccination$dimension==">=18 Years",
+]
+head(data_ny_18plus)
+```
+
+
+```{r, results='hide'}
+library(ggplot2)
+ggplot(data_ny_18plus, aes(x=survey_year_influenza_season,y=estimate,color=vaccine)) +
+  geom_line(linewidth=1) + geom_point(size=2) +
+  labs(title="Estimated Vaccination Coverage among Pregnant Women \nOver Time in New York State, Age >= 18 Years", x="Survey Year / Influenza Season", y="Estimated Vaccination Coverage (%)",color="Vaccine") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 11,hjust=0.5),legend.position="bottom")
+
+```
+
+This plot shows trends in estimated vaccination coverage over time for Influenza and Tdap among adults aged 18 years and older in New York State.
+The influenza vaccination coverage is relatively stable. The Tdap vaccination coverage rose rapidly in earlier years and remained higher and more stable across the study period.
+
+
+```{r, results='hide'}
+
+max(data_ny_18plus$estimate[data_ny_18plus$vaccine=="Influenza"],na.rm = TRUE)
+```
+
+Influenza vaccination peaked at 64.3%.
+
+
+```{r, results='hide'}
+mean(data_ny_18plus$estimate[data_ny_18plus$vaccine=="Influenza"],na.rm = TRUE)
+
+```
+
+Average Influenza vaccination coverage over the study period is 57.5%.
+
+# AI Use Disclosure Statement
+
+This document was completed with assistance from ChatGPT. AI was used to help recall R functions and to provide explanations and examples of their usage. All code and interpretations were reviewed and finalized by the author.
+
