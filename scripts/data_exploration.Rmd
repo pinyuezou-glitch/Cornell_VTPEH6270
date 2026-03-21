@@ -1,0 +1,120 @@
+---
+title: "data_exploration_CP05"
+author: "Fina Zou"
+date: "2026-03-20"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+  html_document:
+    toc: true
+    toc_depth: '1'
+    df_print: paged
+  word_document:
+    toc: true
+    toc_depth: '1'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Research Question and Background
+
+Does measles vaccination coverage among students in kindergarten through grade 12 differ between public and private schools in New York State (excluding New York City) during the 2018–2019 school year?
+
+## Scientific Plausibility and Context
+
+Measles is one of the most contagious human diseases and can lead to serious illness and death. Vaccination is highly effective, with two doses of the measles vaccine providing approximately 97% lifelong protection[@cdc_measles]. However, because measles spreads so easily and can cross borders rapidly, outbreaks can occur in any community where vaccination coverage falls below 95% [@who_measles2024].
+
+Variation in vaccination coverage across schools is a critical public health concern. Previous research has shown that immunization exemption rates are significantly higher in private schools than in public schools in the United States, suggesting that children attending private schools may be at greater risk of vaccine-preventable diseases [@shaw2014private]. Higher exemption rates can lead to lower vaccination coverage and may create pockets of susceptibility that increase the risk of measles outbreaks. Therefore, identifying differences in vaccination coverage across school types can help inform targeted interventions, outreach strategies aimed at maintaining herd immunity and preventing vaccine-preventable disease outbreaks.
+
+# Data Preparation
+
+```{r, results='hide'}
+
+setwd("C:/Users/Clair/Documents/VTPEH6270")
+
+# Load file
+School_immun_data<-read.csv("school_immun_2012_2019.csv")
+
+# Function to convert percentage strings to numeric values
+pct_to_num <- function(x) {
+  x <- gsub("%", "", x)  
+  x[x == ""] <- NA        
+  as.numeric(x)           
+}
+
+# Subset data to the 2018–2019 school year
+immun_1819 <- School_immun_data[School_immun_data$Report.Period == "2018-2019", ]
+
+# Keep only Public and Private schools
+immun_1819 <- immun_1819[immun_1819$Type %in% c("Public School", "Private School"), ]
+
+#  Convert measles vaccination coverage from percentage to numeric
+immun_1819$measles_pct <- pct_to_num(immun_1819$Percent.Immunized.Measles)
+
+# Remove observations with missing vaccination coverage
+immun_1819 <- immun_1819[!is.na(immun_1819$measles_pct), ]
+
+head(immun_1819)
+
+```
+
+# Grouped Summary Statistics
+
+```{r}
+# Create datasets by school type 
+public_schools  <- immun_1819[immun_1819$Type == "Public School", ]
+private_schools <- immun_1819[immun_1819$Type == "Private School", ]
+
+# Create a table of descriptive statistics stratified by school type
+summary_table <- data.frame(
+  School_Type = c("Public School","Private School"),
+  Mean = c(mean(public_schools$measles_pct),
+           mean(private_schools$measles_pct)),
+  SD = c(sd(public_schools$measles_pct),
+         sd(private_schools$measles_pct)),
+  Median = c(median(public_schools$measles_pct),
+             median(private_schools$measles_pct)),
+  IQR = c(IQR(public_schools$measles_pct),
+          IQR(private_schools$measles_pct))
+)
+summary_table
+
+```
+
+The descriptive statistics suggest a potential association between school type and measles vaccination coverage in the 2018–2019 school year. Public schools showed a higher average vaccination coverage (98.85%) compared to private schools (88.93%). While the median coverage was relatively similar between the two groups, the variability differed substantially. Vaccination coverage in public schools appeared highly consistent, as indicated by the small standard deviation and narrow interquartile range. In contrast, private schools showed much greater variability, suggesting that some private schools may have substantially lower vaccination coverage.
+
+# Comparative Visualizations
+
+```{r}
+
+library(ggplot2)
+
+ggplot(immun_1819, aes(x = measles_pct)) +
+  geom_histogram(binwidth = 1, fill = "grey70", color = "black") +
+  facet_wrap(~Type) +
+  labs(
+    title = "Distribution of Measles Vaccination Coverage by School Type (New York State, 
+    2018–2019)",
+    x = "Measles Vaccination Coverage (%)",
+    y = "Count"
+  ) +
+  theme_bw(base_size = 9)
+
+```
+
+The histograms reveal clear differences in the distribution of measles vaccination coverage between public and private schools in the 2018–2019 school year. Public schools show vaccination levels that are tightly clustered near 100%, indicating consistently high coverage. In contrast, although many private schools achieve similarly high coverage, the distribution is substantially wider and includes schools with markedly lower vaccination rates.
+
+Given that measles is highly contagious and that approximately 95% population immunity is required to prevent sustained transmission, the presence of lower-coverage private schools is epidemiologically concerning. Such variability may create pockets of susceptibility that increase the risk of measles outbreaks.
+
+# AI Use Disclosure Statement
+This document was completed with assistance from ChatGPT. AI was used to help recall R functions and to provide explanations and examples of their usage. All code and interpretations were reviewed and finalized by the author.

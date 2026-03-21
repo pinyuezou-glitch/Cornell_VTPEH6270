@@ -1,0 +1,376 @@
+---
+title: "data_simulation_cp05"
+author: "Fina Zou"
+date: "2026-03-20"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+  html_document:
+    toc: true
+    toc_depth: '1'
+    df_print: paged
+  word_document:
+    toc: true
+    toc_depth: '1'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+options(width = 70)
+
+```
+
+```{r, results='hide'}
+
+setwd("C:/Users/Clair/Documents/VTPEH6270")
+
+# Load file
+School_immun_data<-read.csv("school_immun_2012_2019.csv")
+
+# Function to convert percentage strings to numeric values
+pct_to_num <- function(x) {
+  x <- gsub("%", "", x)  
+  x[x == ""] <- NA        
+  as.numeric(x)           
+}
+
+# Subset data to the 2018–2019 school year
+immun_1819 <- School_immun_data[School_immun_data$Report.Period == "2018-2019", ]
+
+# Keep only Public and Private schools
+immun_1819 <- immun_1819[immun_1819$Type %in% c("Public School", "Private School"), ]
+```
+
+# Objective and Approach
+
+## Specific Objective
+
+This research question examines whether the proportion of religious vaccination exemptions differs between public and private schools.
+
+## Data Description
+
+```{r}
+
+library(knitr)
+
+table_variables <- data.frame(
+  Variable_Name = c("Type", "Percent Religious Exemptions"),
+  Variable_Type = c("Categorical", "Continuous"),
+  Variable_Class = c("character", "numeric")
+)
+
+kable(table_variables, caption = "Description of variables used in the analysis")
+
+```
+
+## Data Visualization
+
+```{r}
+
+#  Convert Religious Vaccination Exemptions from percentage to numeric
+immun_1819$Percent.Religious.Exemptions <- pct_to_num(immun_1819$Percent.Religious.Exemptions)
+
+library(ggplot2)
+ggplot(immun_1819, aes(x = Percent.Religious.Exemptions)) +
+  geom_histogram(binwidth = 0.5, fill = "grey70", color = "black") +
+  facet_wrap(~Type) +
+  labs(
+    title = "Distribution of Religious Vaccination Exemptions
+    by School Type (New York State, 2018–2019)",
+    x = "Religious Vaccination Exemptions (%)",
+    y = "Count"
+  ) +
+  theme_bw(base_size = 9)
+
+```
+
+
+## Description of Plausible Relationships
+
+Visual inspection of the histograms suggests that religious vaccination exemptions differ by school type. Most schools show exemption rates close to zero, but private schools appear to have greater variability and more extreme values. This suggests that higher exemption rates may occur more frequently in private schools than in public schools.
+
+## Parameters of Interest
+
+```{r}
+
+library(knitr)
+
+parameter_table <- data.frame(
+  Parameter = c(
+    "Mean religious exemption rate in public schools",
+    "Mean religious exemption rate in private schools",
+    "Difference in mean exemption rates"
+  ),
+  Symbol = c("mu[1]", "mu[2]", "Delta = mu[2] - mu[1]"),
+  Description = c(
+    "Average percentage of religious vaccination exemptions among public schools (%)",
+    "Average percentage of religious vaccination exemptions among private schools (%)",
+    "Effect size: difference in average religious exemption
+    percentage between private and public schools (%)"
+  )
+)
+
+kable(parameter_table, caption = "Parameters of interest for the association 
+      between school type and religious vaccination exemptions")
+
+```
+
+# Simulation
+
+## Simulation Basis
+
+```{r, results='hide'}
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Number of observations
+nn <- 2000
+
+# Probability of each school type
+prob_private <- 0.25
+
+# Simulate school type
+data_sim <- data.frame(
+  Type = sample(
+    c("Public School", "Private School"),
+    nn,
+    replace = TRUE,
+    prob = c(1 - prob_private, prob_private)
+  )
+)
+
+# Parameters for religious exemption rate
+mean_public <- 0.5
+mean_private <- 2.0
+sd_public <- 1.0
+sd_private <- 5.0
+
+# Create empty outcome variable
+data_sim$Percent.Religious.Exemptions <- NA
+
+# Simulate exemption rate conditional on school type
+for (ii in 1:nrow(data_sim)) {
+  if (data_sim$Type[ii] == "Public School") {
+    data_sim$Percent.Religious.Exemptions[ii] <- rnorm(
+      1,
+      mean = mean_public,
+      sd = sd_public
+    )
+  } else if (data_sim$Type[ii] == "Private School") {
+    data_sim$Percent.Religious.Exemptions[ii] <- rnorm(
+      1,
+      mean = mean_private,
+      sd = sd_private
+    )
+  }
+}
+
+data_sim$Percent.Religious.Exemptions <- 
+  pmax(data_sim$Percent.Religious.Exemptions, 0)
+
+data_sim$Percent.Religious.Exemptions <- 
+  pmin(data_sim$Percent.Religious.Exemptions, 100)
+
+head(data_sim)
+
+```
+
+## Simulation Output
+
+```{r}
+
+summary_sim <- aggregate(
+  Percent.Religious.Exemptions ~ Type,
+  data = data_sim,
+  FUN = function(x) c(
+    Mean = mean(x),
+    SD = sd(x)
+  )
+)
+
+print(summary_sim)
+
+```
+
+## Simulation Function
+
+```{r, results='hide'}
+
+simulate_exemptions <- function(effect_size, noise, sample_size) {
+
+mean_public <- 0.5
+mean_private <- mean_public + effect_size
+  
+  # simulate school type
+  Type <- sample(
+    c("Public School", "Private School"),
+    sample_size,
+    replace = TRUE,
+    prob = c(0.75, 0.25)
+  )
+  
+  # simulate exemption rate
+  exemptions <- numeric(sample_size)
+  
+  for (i in 1:sample_size) {
+    
+    if (Type[i] == "Public School") {
+      exemptions[i] <- rnorm(1, mean_public, noise)
+    } else {
+      exemptions[i] <- rnorm(1, mean_private, noise)
+    }
+    
+  }
+  
+  exemptions <- pmin(pmax(exemptions, 0), 100)
+  
+  # Combine data
+  data_sim <- data.frame(
+    Type = Type,
+    Percent.Religious.Exemptions = exemptions
+  )
+
+summary_sim <- aggregate(
+  Percent.Religious.Exemptions ~ Type,
+  data = data_sim,
+  FUN = function(x) c(
+    Mean = mean(x),
+    SD = sd(x)
+  )
+)
+
+return(list(
+  data = data_sim,
+  summary = summary_sim
+))
+
+}
+
+```
+
+
+## Simulation Automation
+
+```{r, results='hide'}
+
+effect_sizes <- seq(0, 2, length.out = 10)
+
+sample_sizes <- seq(200, 2000, length.out = 10)
+
+noise_levels <- c(1, 2, 5)
+
+simulation_results <- list()
+
+counter <- 1
+
+for (e in effect_sizes) {
+  for (n in sample_sizes) {
+    for (noise in noise_levels) {
+
+      result <- simulate_exemptions(
+        effect_size = e,
+        noise = noise,
+        sample_size = n
+      )
+
+      simulation_results[[counter]] <- list(
+        effect_size = e,
+        sample_size = n,
+        noise = noise,
+        data = result$data,
+        summary = result$summary
+      )
+
+      counter <- counter + 1
+
+    }
+  }
+}
+
+```
+
+# Visualization
+
+```{r}
+results_df <- data.frame()
+
+for (i in 1:length(simulation_results)) {
+
+  sim <- simulation_results[[i]]
+
+  summary_sim <- sim$summary
+
+  mean_public <- summary_sim$Percent.Religious.Exemptions[
+    summary_sim$Type == "Public School","Mean"
+  ]
+
+  mean_private <- summary_sim$Percent.Religious.Exemptions[
+    summary_sim$Type == "Private School","Mean"
+  ]
+
+  observed_effect <- mean_private - mean_public
+
+  results_df <- rbind(
+    results_df,
+    data.frame(
+      effect_size = sim$effect_size,
+      sample_size = sim$sample_size,
+      noise = sim$noise,
+      observed_effect = observed_effect
+    )
+  )
+}
+
+results_df$detected <- results_df$observed_effect > 0
+
+power_df <- aggregate(
+  detected ~ effect_size + sample_size + noise,
+  data = results_df,
+  mean
+)
+
+colnames(power_df)[4] <- "power"
+
+ggplot(power_df,
+             aes(x = effect_size,
+                 y = sample_size,
+                 fill = power)) +
+
+  geom_tile() +
+
+  scale_fill_viridis_c(
+    name = "Power",
+    labels = scales::percent_format()
+  ) +
+
+  geom_contour(
+    aes(z = power),
+    breaks = 0.8,
+    color = "white",
+    linewidth = 1
+  ) +
+
+  facet_wrap(~noise) +
+
+  labs(
+    x = "Effect Size",
+    y = "Sample Size",
+    title = "Statistical Power Analysis",
+    subtitle = "White contour line indicates 80% power"
+  ) +
+
+  theme_minimal()
+
+```
+
+
+# AI Use Disclosure Statement
+
+This document was completed with assistance from ChatGPT. AI was used to help recall R functions and to provide explanations and examples of their usage. All code and interpretations were reviewed and finalized by the author.
