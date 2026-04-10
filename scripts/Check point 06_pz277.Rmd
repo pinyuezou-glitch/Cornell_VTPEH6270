@@ -1,0 +1,169 @@
+---
+title: "Check Point 06 - Statistical Analyses"
+author: "Fina Zou"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+  html_document:
+    toc: true
+    toc_depth: '1'
+    df_print: paged
+  word_document:
+    toc: true
+    toc_depth: '1'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Introduction
+
+## Research Question
+
+Does measles vaccination coverage among students in kindergarten through grade 12 differ between public and private schools in New York State (excluding New York City) during the 2018–2019 school year?
+
+## Scientific Plausibility and Context
+
+Measles is one of the most contagious human diseases and can lead to serious illness and death. Vaccination is highly effective, with two doses of the measles vaccine providing approximately 97% lifelong protection[@cdc_measles]. However, because measles spreads so easily and can cross borders rapidly, outbreaks can occur in any community where vaccination coverage falls below 95% [@who_measles2024].
+
+Variation in vaccination coverage across schools is a critical public health concern. Previous research has shown that immunization exemption rates are significantly higher in private schools than in public schools in the United States, suggesting that children attending private schools may be at greater risk of vaccine-preventable diseases [@shaw2014private]. Higher exemption rates can lead to lower vaccination coverage and may create pockets of susceptibility that increase the risk of measles outbreaks. Therefore, identifying differences in vaccination coverage across school types can help inform targeted interventions, outreach strategies aimed at maintaining herd immunity and preventing vaccine-preventable disease outbreaks.
+
+# Material and Methods 
+
+## Data
+
+The data were obtained from the New York State Health Data portal and were provided by the New York State Department of Health. The School Immunization Survey contains school-level aggregate information on student immunization status for grades kindergarten through 12 in New York State, excluding New York City public schools.
+To match the research question, the data were restricted to the 2018–2019 reporting period and to schools classified as either public or private. Measles vaccination coverage was the main outcome variable. Because this variable was recorded as a percentage string in the raw dataset, the percent sign was removed and the values were converted to numeric format before analysis. Schools with missing measles vaccination coverage were excluded from the final analytic sample.
+
+```{r, results='hide'}
+
+setwd("C:/Users/Clair/Documents/Cornell_VTPEH6270")
+
+# Load file
+School_immun_data<-read.csv("data_raw/school_immun_2012_2019.csv")
+
+# Function to convert percentage strings to numeric values
+pct_to_num <- function(x) {
+  x <- gsub("%", "", x)  
+  x[x == ""] <- NA        
+  as.numeric(x)           
+}
+
+# Subset data to the 2018–2019 school year
+immun_1819 <- School_immun_data[School_immun_data$Report.Period == "2018-2019", ]
+
+# Keep only Public and Private schools
+immun_1819 <- immun_1819[immun_1819$Type %in% c("Public School", "Private School"), ]
+
+#  Convert measles vaccination coverage from percentage to numeric
+immun_1819$measles_pct <- pct_to_num(immun_1819$Percent.Immunized.Measles)
+
+# Remove observations with missing vaccination coverage
+immun_1819 <- immun_1819[!is.na(immun_1819$measles_pct), ]
+
+head(immun_1819)
+
+# Create datasets by school type 
+public_schools  <- immun_1819[immun_1819$Type == "Public School", ]
+private_schools <- immun_1819[immun_1819$Type == "Private School", ]
+
+```
+
+## Statistical test
+
+Assumptions for Welch two-sample t-test
+
+1.Observations are independent  
+Each row should represent one separate school, and vaccination coverage in one school should not be a duplicate measurement of another school.  
+
+2.The outcome variable is continuous  
+Measles vaccination coverage was converted from a percentage string to numeric format, so this assumption is satisfied.  
+
+3.Normality
+
+```{r, results='hide'}
+# Shapiro-Wilk tests for normality
+
+shapiro.test(public_schools$measles_pct[1:500])
+shapiro.test(private_schools$measles_pct[1:500])
+
+```
+
+The Shapiro–Wilk test showed significant departures from normality for both public schools (W = 0.529, p-value < 2.2e-16) and private schools (W = 0.538, p-value < 2.2e-16), indicating that measles vaccination coverage was not normally distributed in either group.The normality assumption was not met. However, Welch’s two-sample t-test was retained as the primary analysis because it is generally robust to non-normality.
+
+
+```{r, results='hide'}
+
+welch_result <- t.test(measles_pct ~ Type,
+                       data = immun_1819,
+                       var.equal = FALSE)
+welch_result
+
+```
+
+## Code
+
+All code and materials needed to reproduce this report are available in the following GitHub repository:
+https://github.com/pinyuezou-glitch/Cornell_VTPEH6270.git
+
+# Result
+
+## Visualization
+
+```{r}
+
+# Boxplot of measles vaccination coverage by school type
+boxplot(measles_pct ~ Type,
+        data = immun_1819,
+        main = "Measles Vaccination Coverage by School Type",
+        xlab = "School Type",
+        ylab = "Coverage (%)",
+        col = c("lightblue", "mistyrose"))
+```
+
+The boxplot suggests that public schools generally had higher and more consistent measles vaccination coverage than private schools. Although both groups were centered near high coverage levels, private schools showed much greater variability and many more low-coverage outliers.
+
+```{r}
+# Histograms of measles vaccination coverage by school type
+
+par(mfrow = c(1, 2))
+hist(public_schools$measles_pct,
+     main = "Public Schools",
+     xlab = "Measles Vaccination Coverage (%)",
+     col = "lightblue",
+     breaks = 30)
+
+hist(private_schools$measles_pct,
+     main = "Private Schools",
+     xlab = "Measles Vaccination Coverage (%)",
+     col = "mistyrose",
+     breaks = 30)
+
+```
+
+The histograms indicate that public schools had consistently high measles vaccination coverage, with most schools clustered near 100%. Private schools also had many schools near high coverage levels, but their distribution was much more spread out and included substantially more low-coverage schools. This suggests greater variability and lower overall coverage in private schools.
+
+##Statistical Analyses
+
+A Welch two-sample t-test showed that mean measles vaccination coverage differed significantly between public and private schools. Mean coverage was 88.93% in private schools and 98.85% in public schools. The difference was statistically significant (t = -18.04, df = 1954.2, p-value < 2.2e-16). The estimated mean difference was -9.92 percentage points (private minus public), with a 95% confidence interval from -11.00 to -8.84. These results indicate that private schools had substantially lower measles vaccination coverage than public schools during the 2018–2019 school year.
+
+# Conclusions
+
+The results support the research question by showing that measles vaccination coverage differed significantly between public and private schools in New York State during the 2018–2019 school year. Consistent with expectations, private schools had lower average coverage than public schools. This finding also aligns with previous literature suggesting that private schools may have higher exemption rates and therefore lower immunization coverage.
+
+From a public health perspective, this difference is important because measles is highly contagious and outbreaks can occur when vaccination coverage falls below the level needed for herd immunity. Lower coverage in private schools may indicate pockets of susceptibility where vaccine-preventable outbreaks are more likely to occur. Overall, these findings suggest that school type may be an important factor to consider in vaccination outreach and prevention efforts.
+
+# AI Use Disclosure Statement
+
+This document was completed with assistance from ChatGPT. AI was used to help recall R functions and to provide explanations and examples of their usage. All code and interpretations were reviewed and finalized by the author.
+
