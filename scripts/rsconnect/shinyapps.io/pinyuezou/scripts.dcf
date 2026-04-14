@@ -1,0 +1,10 @@
+name: scripts
+title:
+username: pinyuezou
+account: pinyuezou
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17133947
+bundleId: 11851017
+url: https://pinyuezou.shinyapps.io/scripts/
+version: 1
