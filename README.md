@@ -32,7 +32,7 @@ Key findings: Public schools had significantly higher mean measles coverage (98.
 
 An interactive Shiny app has been developed to visualize and explore the analysis results.
 
-🔗 **Live App:** https://pinyuezou.shinyapps.io/CP07/](https://pinyuezou.shinyapps.io/Final_report/
+🔗 **Live App:** https://pinyuezou.shinyapps.io/Final_report/
 
 ### App Features
 
