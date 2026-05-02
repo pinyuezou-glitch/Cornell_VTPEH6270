@@ -17,7 +17,7 @@ output:
 editor_options:
   chunk_output_type: console
 urlcolor: blue
-bibliography: scripts/references_Final report.bib
+bibliography: references_final_report.bib
 ---
 
 ```{r setup, include = FALSE}
@@ -48,10 +48,8 @@ To match the research question, the data were restricted to the 2018–2019 repo
 
 ```{r, results='hide'}
 
-setwd("C:/Users/Clair/Documents/Cornell_VTPEH6270")
-
 # Load file
-School_immun_data <- read.csv("data/school_immun_2012_2019.csv")
+School_immun_data <- read.csv("../data/school_immun_2012_2019.csv")
 
 # Function to convert percentage strings to numeric values
 pct_to_num <- function(x) {
@@ -115,7 +113,8 @@ welch_result
 
 ```
 
-The Welch two-sample t-test indicated a statistically significant difference in mean measles vaccination coverage between public schools (mean = 98.85%) and private schools (mean = 88.93%), with t = −18.04, df = 1954.2, p < 2.2e-16. The 95% confidence interval for the mean difference ranged from −11.00 to −8.84 percentage points.
+The Welch two-sample t-test indicated a statistically significant difference in mean measles vaccination coverage between public schools (mean = 98.85%) and private schools (mean = 88.93%), with t = -18.04, df = 1954.2, p < 2.2e-16. The 95% confidence interval for the mean difference ranged from -11.00 to -
+8.84 percentage points.
 
 ### Sensitivity Analysis: Wilcoxon Rank-Sum Test
 
@@ -161,7 +160,9 @@ desc_stats <- data.frame(
 knitr::kable(desc_stats,
              col.names = c("School Type", "N", "Mean (%)", "Median (%)",
                            "SD", "Min (%)", "Max (%)"),
-             caption = "Descriptive Statistics of Measles Vaccination Coverage by School Type (2018–2019)")
+             caption = "Descriptive Statistics of Measles Vaccination
+             Coverage by School Type (2018–2019)"
+             )
 
 ```
 
@@ -215,7 +216,7 @@ The histograms confirm that public schools had consistently high measles vaccina
 
 ## Statistical Analyses
 
-A Welch two-sample t-test showed that mean measles vaccination coverage differed significantly between public and private schools. Mean coverage was 98.85% in public schools and 88.93% in private schools. The difference was statistically significant (t = −18.04, df = 1954.2, p < 2.2e-16). The estimated mean difference was −9.92 percentage points (private minus public), with a 95% confidence interval from −11.00 to −8.84.
+A Welch two-sample t-test showed that mean measles vaccination coverage differed significantly between public and private schools. Mean coverage was 98.85% in public schools and 88.93% in private schools. The difference was statistically significant (t = -18.04, df = 1954.2, p < 2.2e-16). The estimated mean difference was -9.92 percentage points (private minus public), with a 95% confidence interval from -11.00 to -8.84.
 
 The Wilcoxon rank-sum test yielded a consistent conclusion (W = 2,146,194, p < 2.2e-16), confirming that the difference in measles vaccination coverage between public and private schools was statistically significant even under the non-parametric approach that does not assume normality.
 
